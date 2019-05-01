@@ -195,7 +195,7 @@ void display()
 	glVertex2f(100, 50);
 	glEnd();
 	glPopMatrix();*/
-	std::cout << player->x << std::endl;
+
 	currentLevel->draw();
 	/*
 		Game Code End
