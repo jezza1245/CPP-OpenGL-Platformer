@@ -19,6 +19,7 @@ int timePassed = 0;
 bool debug = false;
 bool LeftPressed = false;
 char keys[256];
+bool paused = false;
 
 Camera* camera;
 Player* player;
@@ -186,7 +187,7 @@ void display()
 		dt = 0;
 	}if(debug)
 	{
-		//int(dt *= 0.1);
+		dt = 1;
 	}
 	
 
@@ -266,26 +267,30 @@ void init()
 
 void keyPressed(unsigned char c, int x, int y) {
 	keys[c] = true;
+
+	if(c == 27) paused = !paused;
+	if (c == '/') debug = !debug;
 }
 void keyReleased(unsigned char c, int x, int y) {
-	keys[c] = false;
+	keys[c] = false; 
 }
 
 void processKeys() 
 {
-	if (keys['w']) {
-		player->jump();
+	if (!paused) {
+		if (keys['w']) {
+			player->jump();
+		}
+		if (keys['a']) {
+			player->moveLeft();
+		}
+		if (keys['d']) {
+			player->moveRight();
+		}
+		if (keys['s']) {
+			player->fastFall();
+		}
 	}
-	if (keys['a']) {
-		player->moveLeft();
-	}
-	if (keys['d']) {
-		player->moveRight();
-	}
-	if (keys['s']) {
-		player->fastFall();
-	}
-	debug = keys[32] != 0;
 }
 
 void special(int key, int x, int y)
@@ -389,17 +394,18 @@ void update()
 	/*
 		Update Code Start
 	*/
+	if (!paused) {
+		for (auto& scroob : scroobs)
+		{
+			scroob->update(currentLevel->layout, scroobs);
+		}
 
-	for (auto& scroob : scroobs)
-	{
-		scroob->update(currentLevel->layout,scroobs);
+		//CircleCircleCollisions();
+
+		camera->update(*player);
+
+		
 	}
-
-	//CircleCircleCollisions();
-
-	camera->update(*player);
-
-
 	processKeys();
 	/*
 		Update Code End
