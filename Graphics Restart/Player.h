@@ -13,17 +13,30 @@ public:
 		radius = pRadius;
 	}
 
-	void update(std::string level) override
+	void updateTexture() override
 	{
-		bool collidedWithGround = false;
+		if(std::abs(vector.xPart) < 1)
+		{
+			texture = scroob_normal;
+		}
+		else {
+			texture = scroob_silly;
+		}
+	}
+
+	void update(std::string level, std::vector<Scroob*> scroobs) override
+	{
 		applyFriction();
 		vector += (gravity * dt);
+
 		x += (vector.xPart * dt);
 		y += (vector.yPart* dt);
 
-		collidedWithGround = resolveTileCollisions(level);
-		resolveMapCollisions(collidedWithGround);
+		collisions(level,scroobs);
+		updateTexture();
 	}
+
+	
 
 	void jump()
 	{

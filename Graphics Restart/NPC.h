@@ -6,15 +6,21 @@
 #include "Globals.h"
 #include <string>
 
-class NPC : Scroob
+class NPC : public Scroob
 {
+public:
 	bool isFriendly, baloon = false;
 	NPC(float pRadius): Scroob()
 	{
 		radius = pRadius;
 	}
 
-	void update(std::string layout) override
+	void updateTexture() override
+	{
+		texture = scroob_silly;
+	}
+
+	void update(std::string level, std::vector<Scroob*> scroobs) override
 	{
 		applyFriction();
 		if (!baloon) {
@@ -23,8 +29,8 @@ class NPC : Scroob
 		x += (vector.xPart * dt);
 		y += (vector.yPart * dt);
 		
-		resolveTileCollisions(layout);
-		resolveMapCollisions();
+		collisions(level,scroobs);
+		updateTexture();
 	}
 
 };

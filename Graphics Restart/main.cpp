@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "Camera.h"
 #include "Player.h"
+#include "NPC.h"
 
 int	mouse_x=0, mouse_y=0;
 int screenWidth=1280, screenHeight=720;
@@ -21,18 +22,23 @@ char keys[256];
 
 Camera* camera;
 Player* player;
-std::vector<Entity*> entities;
+NPC* test;
+NPC* test1;
+std::vector<Scroob*> scroobs;
 
 
 //OPENGL FUNCTION PROTOTYPES
 void display();				//called in winmain to draw everything to the screen
 void reshape(int width, int height);				//called when the window is resized
+void loadAssets();
 void init();				//called in winmain when the program starts.
 void processKeys();
 void keyPressed();
 void keyReleased();
+//void CircleCircleCollisions();
 void special(int key, int x, int y);
 void update();				//called in winmain to update variables
+
 
 GLuint loadPNG(char* name)
 {
@@ -68,37 +74,37 @@ public:
 	int actualWidth = 5000, actualheight = 1250, nTilesHigh = 25, nTilesWide = 100, tileLength = 50;
 	std::vector<Entity*> characters;
 	std::string layout;
-	Level(int levelNumber, std::vector<Entity*> entities)
+	Level(int levelNumber)
 	{
 		switch (levelNumber)
 		{
 		case 1:
 			//build level 1
-			layout += "........................#..........................................................................."; //25
-			layout += ".......................#............................................................................";
-			layout += "......................#.............................................................................";
-			layout += ".....................#..............................................................................";
-			layout += "....................#...............................................................................";
-			layout += "...................#................................................................................"; //20
-			layout += "..................#.................................................................................";
-			layout += ".................#..................................................................................";
-			layout += "................#...................................................................................";
-			layout += "...............#....................................................................................";
-			layout += "..............#....................................................................................."; //15
-			layout += ".............#......................................................................................";
-			layout += "............#.......................................................................................";
-			layout += "...........#........................................................................................";
-			layout += "..........#.........................................................................................";
-			layout += ".........#.........................................................................................."; //10
-			layout += "........#...........................................................................................";
-			layout += ".......###..........................................................................................";
-			layout += "......#.............................................................................................";
-			layout += ".....#..............................................................................................";
-			layout += "....#..............................................................................................."; //5
-			layout += "...#................................................................................................";
-			layout += "..#.................................................................................................";
-			layout += ".#..................................................................................................";
-			layout += "#...................................................................................................";
+			layout += "###########################################...........##############################................"; //25
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "########............................................................................................";
+			layout += ".......................................#######################......................................"; //20
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "..................###########.......................................................................";
+			layout += "####................................................................................................";
+			layout += "...................................................................................................."; //15
+			layout += "....................................................................................................";
+			layout += ".............#########..............................................................................";
+			layout += "....................................................................................................";
+			layout += "###.................................................................................................";
+			layout += "...................................................................................................."; //10
+			layout += "....................................................................................................";
+			layout += "....................##..............................................................................";
+			layout += "..............###############...................###############.....................................";
+			layout += "##...................................................................................#..............";
+			layout += ".....................................................................................#.............."; //5
+			layout += ".....................................................................................#..............";
+			layout += ".....................................................................................#..............";
+			layout += ".....................................................................................#..............";
+			layout += ".......................#...####..........#####################.......................#..............";
 			break;
 		case 2:
 			//build level 2
@@ -107,8 +113,6 @@ public:
 			//build level 1?
 			break;
 		}
-
-		characters = entities;
 	}
 
 	void draw()
@@ -130,7 +134,7 @@ public:
 					break;
 				default:
 					drawTile = false;
-					glClearColor(0.0, 0.0, 0.0, 1.0);
+					//glClearColor(0.0, 0.0, 0.0, 1.0);
 					break;
 				}
 
@@ -153,12 +157,20 @@ public:
 		glPopMatrix();
 
 		//draw entities
-		for (auto& entity : entities)
+		for (auto& scroob : scroobs)
 		{
-			entity->draw();
+			scroob->draw();
 		}
 		//draw foreground
 
+		glLoadIdentity();
+		glPushMatrix();
+		glColor3f(0, 1, 1);
+		glPointSize(5);
+		glBegin(GL_POINT);
+		glVertex2f(100, 100);
+		glEnd();
+		glPopMatrix();
 
 	}
 };
@@ -174,7 +186,7 @@ void display()
 		dt = 0;
 	}if(debug)
 	{
-		dt *= 0.1;
+		//int(dt *= 0.1);
 	}
 	
 
@@ -185,18 +197,18 @@ void display()
 	/*
 		Game Code Begin...
 	*/
-	/*glPushMatrix();
 
-	glBegin(GL_POLYGON);
+	currentLevel->draw();
+
+
+	/*glBegin(GL_POLYGON);
 	glColor3f(1, 0, 0);
 	glVertex2f(50, 50);
 	glVertex2f(50, 100);
-	glVertex2f(100, 100);
-	glVertex2f(100, 50);
+	glVertex2f(200, 100);
+	glVertex2f(200, 50);
 	glEnd();
-	glPopMatrix();*/
-
-	currentLevel->draw();
+*/
 	/*
 		Game Code End
 	*/
@@ -223,15 +235,29 @@ void reshape(int width, int height)		// Resize the OpenGL window
 	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
 	glLoadIdentity();									
 }
+void loadAssets()
+{
+	scroob_normal = loadPNG("assets/scroobs/scroob_normal.png");
+	scroob_silly = loadPNG("assets/scroobs/scroob_silly.png");
+}
 void init()
 {
 	glClearColor(0.0,0.0,0.0,1.0);
-
-	player = new Player(25);
+	loadAssets();
+	player = new Player(15);
 	player->x = 100;
 	player->y = 100;
-	entities.push_back(player);
-	currentLevel = new Level(1, entities);
+	test = new NPC(10);
+	test->x = 200;
+	test->y = 50;
+	test1 = new NPC(40);
+	test1->x = 300;
+
+	scroobs.push_back(player);
+	scroobs.push_back(test);
+	scroobs.push_back(test1);
+
+	currentLevel = new Level(1);
 	camera = new Camera();
 
 	old_t = glutGet(GLUT_ELAPSED_TIME);
@@ -259,13 +285,7 @@ void processKeys()
 	if (keys['s']) {
 		player->fastFall();
 	}
-	if (keys[32]) {
-		debug = true;
-	}else
-	{
-		debug = false;
-	}
-
+	debug = keys[32] != 0;
 }
 
 void special(int key, int x, int y)
@@ -311,16 +331,71 @@ void mouse(int button, int state, int x, int y)
 	}
 }
 
+//void CircleCircleCollisions()
+//{
+//	float xDist, yDist;
+//	for (int i = 0; i < scroobs.size(); i++) {
+//		Scroob* A = scroobs.at(i);
+//		for (int j = i + 1; j < scroobs.size(); j++) {
+//			Scroob* B = scroobs.at(j);
+//			float axmin = A->x - A->radius;
+//			float axmax = A->x + A->radius;
+//			float aymin = A->y - A->radius;
+//			float aymax = A->y + A->radius;
+//
+//			float bxmin = B->x - B->radius;
+//			float bxmax = B->x + B->radius;
+//			float bymin = B->y - B->radius;
+//			float bymax = B->y + B->radius;
+//
+//			if (axmin < bxmax && axmax > bxmin && aymin < bymax && aymax > bymin) {
+//				xDist = A->x - B->x;
+//				yDist = A->y - B->y;
+//				float distSquared = xDist * xDist + yDist * yDist;
+//				//Check the squared distances
+//				if (distSquared <= (A->radius + B->radius)*(A->radius + B->radius)) {
+//						A->x += (-A->vector.xPart * dt);
+//						//B->x += (-B->vector.xPart * dt);
+//						A->y += (-A->vector.yPart * dt);
+//						//B->y += (-B->vector.yPart * dt);
+//						float xVelocity = B->vector.xPart - A->vector.xPart;
+//						float yVelocity = B->vector.yPart - A->vector.yPart;
+//						float dotProduct = xDist * xVelocity + yDist * yVelocity;
+//						//check if the objects move towards one another.
+//						if (dotProduct > 0) {
+//							double collisionScale = dotProduct / distSquared;
+//							double xCollision = xDist * collisionScale;
+//							double yCollision = yDist * collisionScale;
+//
+//							A->vector.xPart += xCollision;
+//							A->vector.yPart += yCollision;
+//							B->vector.xPart -= xCollision;
+//							B->vector.yPart -= yCollision;
+//
+//							//A->mapCollisions(currentLevel->layout);
+//							//B->mapCollisions(currentLevel->layout);
+//						
+//					}
+//				}
+//			}
+//
+//		}
+//	}
+//}
+
+
 void update()
 {
 	/*
 		Update Code Start
 	*/
 
-	for (auto& entity : entities)
+	for (auto& scroob : scroobs)
 	{
-		entity->update(currentLevel->layout);
+		scroob->update(currentLevel->layout,scroobs);
 	}
+
+	//CircleCircleCollisions();
 
 	camera->update(*player);
 
