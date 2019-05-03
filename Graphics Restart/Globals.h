@@ -23,6 +23,6 @@ GLuint waterfall11 = 0;
 GLuint waterfall12 = 0;
 GLuint waterfall13 = 0;
 GLuint waterfall14 = 0;
-
+int points = 0;
 int dt = 0;
 #endif

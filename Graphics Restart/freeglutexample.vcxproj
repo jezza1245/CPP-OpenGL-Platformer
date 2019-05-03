@@ -18,6 +18,7 @@
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Globals.h" />
     <ClInclude Include="MovementVector.h" />
+    <ClInclude Include="MovingPlatform.h" />
     <ClInclude Include="NPC.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Scroob.h" />

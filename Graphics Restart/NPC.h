@@ -9,7 +9,7 @@
 class NPC : public Scroob
 {
 public:
-	bool isFriendly, baloon = false;
+	bool isFriendly;
 	NPC(float pRadius): Scroob()
 	{
 		radius = pRadius;
@@ -20,16 +20,36 @@ public:
 		texture = scroob_silly;
 	}
 
-	void update(std::string level, std::vector<Scroob*> scroobs) override
+	void update(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms) override
 	{
 		applyFriction();
-		if (!baloon) {
-			vector += gravity;
+
+		if(radius * 0.9999 < 1)
+		{
+			radius = 1;
 		}
+		else {
+			radius *= 0.9999;
+		}
+
+		vector += gravity;
+		
 		x += (vector.xPart * dt);
 		y += (vector.yPart * dt);
+
+		if(!dead && findTile(x,y,level) == 'H')
+		{
+			if(radius > 25)
+			{
+				points += int(radius);
+			}
+			dead = true;
+			std::cout << points << std::endl;
+		}
+
 		
-		collisions(level,scroobs);
+		
+		collisions(level,scroobs,platforms);
 		updateTexture();
 	}
 

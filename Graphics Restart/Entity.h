@@ -4,16 +4,20 @@
 #include "MovementVector.h"
 
 
-class Entity
+class Entity 
 {
 public:
 	GLuint texture = 0;
 	MovementVector vector = MovementVector(0,0.1);
 	float x = 0, y = 0;
 	bool isOnGround = false;
-	virtual void updateTexture() = 0;
+
 	virtual void draw() = 0;
-	
+	bool close(float otherX, float otherY)
+	{
+		return abs(x - otherX) < 250 && abs(y - otherY) < 250;
+	}
+
 	int getXTileCoordinate(float x)
 	{
 		return x / 50; //50 is H and W

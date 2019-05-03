@@ -2,13 +2,16 @@
 #ifndef SCROOB_H
 #define SCROOB_H
 #include "Entity.h"
+#include "MovingPlatform.h"
 
 class Scroob : public Entity
 {
 public:
+	bool dead = false;
 	float rollAngle = 0, radius = 1;
 	Scroob() = default;
-	virtual void update(std::string layout, std::vector<Scroob*> scroobs) = 0;
+	virtual void updateTexture() = 0;
+	virtual void update(std::string layout, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms) = 0;
 	void draw() override
 	{
 		glLoadIdentity();
@@ -52,12 +55,13 @@ public:
 	{
 		vector.xPart *= 0.97;
 	}
-	void collisions(std::string level, std::vector<Scroob*> scroobs)
+	void collisions(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms)
 	{
 		bool collidedWithGround = false;
 		collidedWithGround = resolveTileCollisions(level);
 		resolveMapCollisions(collidedWithGround);
-		CircleCircleCollisions(level,scroobs);
+		resolvePlatformCollisions(platforms);
+		CircleCircleCollisions(level,scroobs,platforms);
 	}
 	bool resolveTileCollisions(std::string tileMap) //return true if bottom collision
 	{
@@ -149,6 +153,22 @@ public:
 
 		return false;
 	}
+	void resolvePlatformCollisions(std::vector<MovingPlatform*> platforms)
+	{
+		for(auto& platform : platforms)
+		{
+			if (close(platform->x, platform->y)) {
+				if (x - radius < platform->x + platform->width / 2 &&
+					x + radius > platform->x - platform->width / 2 &&
+					y - radius < platform->y + platform->height / 2 &&
+					y + radius > platform->y - platform->height / 2)
+				{
+					AABBCollision(radius, radius, platform->x - platform->width / 2, platform->x + platform->width / 2,
+						platform->y - platform->height / 2, platform->y + platform->height / 2);
+				}
+			}
+		}
+	}
 	void resolveMapCollisions(bool onGround)
 	{
 		if(x-radius<0) //LEFT WALL
@@ -182,13 +202,13 @@ public:
 			isOnGround = false;
 		}
 	}
-	bool CircleCircleCollisions(std::string level,std::vector<Scroob*> scroobs)
+	bool CircleCircleCollisions(std::string level,std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms)
 	{
 		float xDist, yDist;	
 		for (int j = 0; j < scroobs.size(); j++) {
 			if (this == scroobs.at(j)) continue;
 			Scroob* B = scroobs.at(j);
-			if (abs(x-B->x)>200 && abs(y - B->y) > 200) continue;
+			if (!close(B->x,B->y)) continue;
 			float axmin = x - radius;
 			float axmax = x + radius;
 			float aymin = y - radius;
@@ -223,7 +243,7 @@ public:
 						B->vector.xPart -= xCollision;
 						B->vector.yPart -= yCollision;
 
-						B->collisions(level,scroobs);
+						B->collisions(level,scroobs,platforms);
 						return true;
 					}
 				}

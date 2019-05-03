@@ -15,7 +15,7 @@ public:
 
 	void updateTexture() override
 	{
-		if(std::abs(vector.xPart) < 1)
+		if(std::abs(vector.xPart) < 0.9)
 		{
 			texture = scroob_normal;
 		}
@@ -24,7 +24,7 @@ public:
 		}
 	}
 
-	void update(std::string level, std::vector<Scroob*> scroobs) override
+	void update(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms) override
 	{
 		applyFriction();
 		vector += (gravity * dt);
@@ -32,7 +32,7 @@ public:
 		x += (vector.xPart * dt);
 		y += (vector.yPart* dt);
 
-		collisions(level,scroobs);
+		collisions(level,scroobs,platforms);
 		updateTexture();
 	}
 
@@ -53,7 +53,7 @@ public:
 		}
 	}
 	void fastFall() {
-		vector.yPart -= 0.03;
+		vector.yPart -= 0.015;
 	}
 
 };
