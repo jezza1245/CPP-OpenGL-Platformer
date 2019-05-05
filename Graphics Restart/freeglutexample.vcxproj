@@ -21,6 +21,7 @@
     <ClInclude Include="MovingPlatform.h" />
     <ClInclude Include="NPC.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="SceneryPiece.h" />
     <ClInclude Include="Scroob.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

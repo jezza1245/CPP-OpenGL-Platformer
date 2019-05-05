@@ -3,19 +3,19 @@
 #define ENTITY_H
 #include "MovementVector.h"
 
-
 class Entity 
 {
 public:
 	GLuint texture = 0;
-	MovementVector vector = MovementVector(0,0.1);
+	MovementVector vector = MovementVector(0,0.0);
 	float x = 0, y = 0;
 	bool isOnGround = false;
 
 	virtual void draw() = 0;
-	bool close(float otherX, float otherY)
+	
+	bool close(float otherX, float otherY, float distance)
 	{
-		return abs(x - otherX) < 250 && abs(y - otherY) < 250;
+		return abs(x - otherX)<distance && abs(y - otherY)< distance;
 	}
 
 	int getXTileCoordinate(float x)
@@ -40,9 +40,10 @@ public:
 		return NULL;
 
 	}
-	void AABBCollision(float width, float height,
+	bool AABBCollision(float width, float height,
 		float bxmin, float bxmax, float bymin, float bymax)
 	{
+		width /= 2; height /= 2;
 		if (x-width < bxmax && x+width > bxmin && y-height < bymax && y+height > bymin) {
 			if (vector.xPart > 0) //Travelling right
 			{
@@ -53,16 +54,24 @@ public:
 				}
 				else //bottom or top side 
 				{
-					if (vector.yPart < 0) //top side
+					if (vector.yPart <= 0) //top side
 					{
 						y = bymax + height;
 						isOnGround = true;
+						if(vector.yPart > -0.04)
+						{
+							vector.yPart = 0;
+						}else
+						{
+							vector.yPart = -vector.yPart * 0.6;
+						}
 					}
 					else //bottom side
 					{
 						y = bymin - height;
+						vector.yPart = -vector.yPart * 0.6;
 					}
-					vector.yPart = -vector.yPart * 0.8;
+					
 				}
 			}
 			else //Travelling left
@@ -74,20 +83,31 @@ public:
 				}
 				else //top or bottom side
 				{
-					if (vector.yPart < 0) //top side
+					if (vector.yPart <= 0) //top side
 					{
 						y = bymax + height;
 						isOnGround = true;
+						if (vector.yPart > -0.04)
+						{
+							vector.yPart = 0;
+						}
+						else
+						{
+							vector.yPart = -vector.yPart * 0.6;
+						}
 					}
 					else //bottom side
 					{
 						y = bymin - height;
+						vector.yPart = -vector.yPart * 0.6;
 					}
-					vector.yPart = -vector.yPart * 0.8;
+					
 					
 				}
 			}
+			return true;
 		}
+		return false;
 	}
 };
 

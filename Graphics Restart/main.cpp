@@ -10,6 +10,7 @@
 #include "NPC.h"
 #include "MovingPlatform.h"
 
+
 int	mouse_x=0, mouse_y=0;
 int screenWidth=1280, screenHeight=720;
 // Timer 
@@ -17,16 +18,121 @@ int screenWidth=1280, screenHeight=720;
 int old_t;
 int gameSpeed = 1;
 int timePassed = 0;
-bool debug = false;
+
 bool LeftPressed = false;
 char keys[256];
-bool paused = false;
 
-Camera* camera;
+bool restarting = false;
 Player* player;
-NPC* test;
-NPC* test1;
-MovingPlatform* testPlatform;
+Camera* camera;
+/*
+	SceneryPiece:
+	Square Polygon Textured with or without animation
+	Non-interactible used as decoration (non-functional)
+
+ */
+class SceneryPiece
+{
+public:
+	GLuint texture = 0; //Base texture
+	bool animated = false; //Will it iterate over many textures?
+		int currentSpriteIndex = 0; //current index of texture in 'sprites'
+		int timeSinceCreation = 0;
+	int repeats = 0; //how many texture repeats in the x axis
+	float parallax = 0; //parallax offset from character position
+
+	float xmin = 0, ymin = 0, height = 0, width = 0;
+	float autoMove = 0; //If moving scenery, current offset from creation
+	std::vector<GLuint> sprites; //collection of textures to iterate over
+	SceneryPiece()
+	{
+
+	}
+	SceneryPiece(float x, float y, float w, float h, GLuint tex, float offset, int reps, bool animate)
+	{
+		xmin = x; ymin = y; width = w; height = h;
+		texture = tex;
+		parallax = offset;
+		repeats = reps;
+		if(animated = animate) //WRITE INTO CONSTRUCTOR TO CHOOSE TEXTURES
+		{
+			//FOR NOW USE DEFAULTS
+			tex = waterfall1;
+			sprites.push_back(waterfall1);
+			sprites.push_back(waterfall2);
+			sprites.push_back(waterfall3);
+			sprites.push_back(waterfall4);
+			sprites.push_back(waterfall5);
+			sprites.push_back(waterfall6);
+			sprites.push_back(waterfall7);
+			sprites.push_back(waterfall8);
+			sprites.push_back(waterfall9);
+			sprites.push_back(waterfall10);
+			sprites.push_back(waterfall11);
+			sprites.push_back(waterfall12);
+			sprites.push_back(waterfall13);
+			sprites.push_back(waterfall14);
+		}
+		
+	}
+	void update()
+	{
+		if(animated) //If animated scenery piece
+		{
+			if(glutGet(GLUT_ELAPSED_TIME) > timeSinceCreation + 150/dt) //Has enough time passed from last texture switch
+			{
+				timeSinceCreation = glutGet(GLUT_ELAPSED_TIME); //get current time as last update time
+				currentSpriteIndex++; //get next texture index
+				if (currentSpriteIndex > sprites.size() - 1) currentSpriteIndex = 0; //cyclic
+				texture = sprites.at(currentSpriteIndex); //assign new texture
+			}
+		}
+	}
+	void draw()
+	{
+		glLoadIdentity();
+		glPushMatrix();
+		if(parallax == 0) //No parralax, no translation
+		{
+			
+		}
+		else if (parallax == -1) { //auto moving
+			if (!paused) {
+				autoMove += 0.1 * dt; //move sideways
+				if (autoMove > 910) //reset
+				{
+					autoMove = 0;
+				}
+			}
+			glTranslatef(autoMove, 0, 0); //apply translation
+		}
+		else //
+		{
+			glTranslatef((camera->x) / parallax * 0.1, 0, 0);
+		}
+		
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glEnable(GL_BLEND);
+		glBegin(GL_POLYGON);
+		glTexCoord2f(0.01, 0.01); glVertex2f(xmin, ymin);
+		glTexCoord2f(0.01, 0.99); glVertex2f(xmin, ymin+height);
+		glTexCoord2f(repeats+0.99, 0.99); glVertex2f(xmin+width, ymin + height);
+		glTexCoord2f(repeats+0.99, 0.01); glVertex2f(xmin+width, ymin);
+		glEnd();
+		glDisable(GL_BLEND);
+		glDisable(GL_TEXTURE_2D);
+		glPopMatrix();
+	}
+
+};
+
+
+
+
+MovingPlatform* platform1;
+MovingPlatform* platform2;
+MovingPlatform* platform3;
 std::vector<Scroob*> scroobs;
 std::vector<MovingPlatform*> platforms;
 
@@ -60,8 +166,10 @@ GLuint loadPNG(char* name)
 		glTexImage2D(GL_TEXTURE_2D, 0, img.getInternalFormat(), img.getWidth(), img.getHeight(), 0, img.getFormat(), img.getType(), img.getLevel(0));
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 	}
 	else {
@@ -75,69 +183,173 @@ GLuint loadPNG(char* name)
 class Level
 {
 public:
-	int actualWidth = 5000, actualheight = 1250, nTilesHigh = 25, nTilesWide = 100, tileLength = 50;
+	int actualWidth = 5000, actualheight = 1250, nTilesHigh = 25, nTilesWide = 100, tileLength = 50, levelCode = 1;
 	std::vector<Entity*> characters;
 	std::string layout;
+	SceneryPiece ground, sky, vague, medium, detailed, skyFeature;
+	std::vector<SceneryPiece> extraScenery;
 	Level(int levelNumber)
 	{
+		levelCode = levelNumber;
 		switch (levelNumber)
 		{
 		case 1:
 			//build level 1
-			layout += "###########################################...........##############################...............H"; //25
-			layout += "...................................................................................................H";
-			layout += "...................................................................................................H";
-			layout += "...................................................................................................H";
-			layout += "########...........................................................................................H";
-			layout += ".......................................#######################.....................................H"; //20
-			layout += "...................................................................................................H";
-			layout += "...................................................................................................H";
-			layout += "..................###########......................................................................H";
-			layout += "####...............................................................................................H";
-			layout += "...................................................................................................H"; //15
-			layout += "...................................................................................................H";
-			layout += ".............#########.............................................................................H";
-			layout += "...................................................................................................H";
-			layout += "###................................................................................................H";
-			layout += "...................................................................................................H"; //10
-			layout += ".........................................................#######........########...................H";
-			layout += "...................................................................................................H";
-			layout += "...................................................................................................H";
-			layout += "...................................................................................................H";
-			layout += ".................................................#########..##..########..##..##########...........H"; //5
-			layout += ".................................................######............................................H";
-			layout += ".......................................##########..................................................H";
-			layout += ".......................................######......................................................H";
-			layout += "................H..............#########...........................................................H";
+			layout += "..........................................#........................................................."; //25
+			layout += "..........................................#.........................................................";
+			layout += "..................................................................###...####...####...####...#######";
+			layout += "..........................................#.........................................................";
+			layout += "..P.......................................#............#################............................";
+			layout += "#####......#######........#######.....#####........................................................."; //20
+			layout += "..........................................#.........................................................";
+			layout += "..######..................S...............#.........................................................";
+			layout += "..##...s.......S..........................#.........................................................";
+			layout += ".........###..............#....S..........#############.............................................";
+			layout += "...................................#...S..#........................................................."; //15
+			layout += "......##...#######....#...................#.........................................................";
+			layout += "...............................#..........#.........................................................";
+			layout += "....................#..................#..#.........................................................";
+			layout += "..........................................#.........................................................";
+			layout += "..####......###............#..............#........................................................."; //10
+			layout += "..........................................###########...............................................";
+			layout += "..................................#.......#.........................................................";
+			layout += "..........................................#.........................................................";
+			layout += "..........................................#.........................................................";
+			layout += "..................................E.......#........................................................."; //5
+			layout += "###########################################.........................................................";
+			layout += "..........................................#.........................................................";
+			layout += "#.....#.....#.....#....#....#....#....#...#.........................................................";
+			layout += "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH#.........................................................";
+
+			ground = SceneryPiece(-5000, -200, 20000, 1080, grass_floor, 0, 10, false);
+			sky = SceneryPiece(-5000, 0, 20000, 1250, level1_sky, 1.1, 10, false);
+			vague = SceneryPiece(-5000, 0, 20000, 120, level1_farhills, 1.07, 10, false);
+			medium = SceneryPiece(-5000, -50, 20000, 1000, level1_closehills, 1.05, 10, false);
+			detailed = SceneryPiece(-5000, -100, 20000, 900, level1_detailedhills, 0, 10, false);
+			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 10, false);
+
+			extraScenery.push_back(SceneryPiece(350, 0, 200, 348, waterfall1, 0, 0, true));
+
+			
+
 			break;
 		case 2:
-			//build level 2
+			//build level 1
+			layout += "...................................................................................................."; //25
+			layout += ".##..................S..................................................########....................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += ".........##################################.....######......############............................";
+			layout += "...................................................................................................."; //20
+			layout += "....................................................................................................";
+			layout += "......................................S.....################........................................";
+			layout += "....................S...............................................................................";
+			layout += "....................................................................................................";
+			layout += ".##...............................##########........................................................"; //15
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += ".........................#########..................................................................";
+			layout += "....................................................................................................";
+			layout += ".##................................................................................................."; //10
+			layout += "................#########...........................................................................";
+			layout += "....................................................................................................";
+			layout += "..........................#.........................................................................";
+			layout += "....................................................................................................";
+			layout += ".##...........................#....................................................................."; //5
+			layout += "........................#...........................................................................";
+			layout += ".......#...........E....#............#..............................................................";
+			layout += ".P.....#.S.S.S.S.S......#...........................................................................";
+			layout += ".......#................#....###HHHHHHH#############.HHHHHHHHHHH..################..................";
+
+			ground = SceneryPiece(-5000, -200, 20000, 1080, grass_floor, 0, 10, false);
+			sky = SceneryPiece(-5000, 0, 20000, 1250, level1_sky, 1.1, 10, false);
+			vague = SceneryPiece(-5000, 0, 20000, 120, level1_farhills, 1.07, 10, false);
+			medium = SceneryPiece(-5000, -50, 20000, 1000, level1_closehills, 1.05, 10, false);
+			detailed = SceneryPiece(-5000, -100, 20000, 900, level1_detailedhills, 0, 10, false);
+			skyFeature = SceneryPiece(0, 0, 10000, 1250, level1_clouds, -1, 10, false);
+			
+			platform1 = new MovingPlatform(true, 500, 200, 400, 800, true);
+		
+			platforms.push_back(platform1);
+		
+			
 			break;
 		default:
 			//build level 1?
 			break;
 		}
+		for(int i = 0; i<scroobs.size(); i++)
+		{
+			scroobs.erase(scroobs.begin() + i);
+		}
+		
+		player = new Player(25);
+		
+		for(int i=0; i<layout.length(); i++)  //SPAWN SCROOBS AT LOCATIONS
+		{
+			if(layout[i] == 'S')
+			{
+				NPC* newScroob = new NPC(true,40, (i % nTilesHigh)*tileLength, (nTilesHigh - (i / nTilesWide))*tileLength);
+				scroobs.push_back(newScroob);
+			}
+			else if (layout[i] == 'E')
+			{ 
+				NPC* newScroob = new NPC(false, 50, i % nTilesHigh*tileLength, (nTilesHigh - (i / nTilesWide))*tileLength);
+				scroobs.push_back(newScroob);
+			}
+			else if(layout[i] == 'P')
+			{
+				player->x = i % nTilesHigh*tileLength;
+				player->y = (nTilesHigh - i / nTilesWide)*tileLength;
+			}
+		}
+		scroobs.push_back(player);
+
+		restarting = false;
+		paused = false;
 	}
 
-	void draw()
+	~Level()
 	{
-		glLoadIdentity();
-		glPushMatrix();
-		//draw background
+		if (!platforms.empty()) {
+			for (MovingPlatform* platform : platforms)
+			{
+				delete platform;
+			}
+			platforms.clear();
+		}
+		if (!scroobs.empty()) {
+			Scroob* findPlayer;
+			for (Scroob*scroob : scroobs)
+			{
+				if (scroob != player)
+				{
+					delete scroob;
+				}else
+				{
+					findPlayer = scroob;
+				}
+			}
+			scroobs.clear();
+			scroobs.push_back(findPlayer);
+		}
+	}
 
-
-		//draw tiles
+	void drawTiles()
+	{
 		for (int y = nTilesHigh - 1; y >= 0; y--) { //int y = height - 1;  y >= 0; y--
 			for (int x = 0; x < nTilesWide; x++) { //int x = 0; x < width; x++
 				char tile = layout[y*nTilesWide + x];
+				GLuint texture = 0;
 				bool drawTile = true;
 				switch (tile) {
 				case '#':
 					//set texture
-					glColor3f(0, 0.8, 0.6);
+					texture = grass_block;
+					//glColor3f(0, 0.8, 0.6);
 					break;
 				case 'H':
-					glColor3f(0, 1.0, 0.0);
+					texture = safe;
 					break;
 				default:
 					drawTile = false;
@@ -149,31 +361,102 @@ public:
 				{
 					glPushMatrix();
 					glTranslatef(x*tileLength, (nTilesHigh*tileLength) - (y*tileLength) - tileLength, 0);
+
+					glEnable(GL_TEXTURE_2D);
+					glBindTexture(GL_TEXTURE_2D, texture);
+					glEnable(GL_BLEND);
+
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 					glBegin(GL_POLYGON);
-					glVertex2f(0, 0);
-					glVertex2f(0, tileLength);
-					glVertex2f(tileLength, tileLength);
-					glVertex2f(tileLength, 0);
+					glTexCoord2f(0, 0); glVertex2f(0, 0);
+					glTexCoord2f(0, 1);  glVertex2f(0, tileLength);
+					glTexCoord2f(1, 1);  glVertex2f(tileLength, tileLength);
+					glTexCoord2f(1, 0); glVertex2f(tileLength, 0);
 					glEnd();
+					glDisable(GL_BLEND);
+					glDisable(GL_TEXTURE_2D);
 					glPopMatrix();
+
+					if (debug)
+					{
+						////Draw square
+						glPushMatrix();
+						glColor3f(1, 1, 1);
+						glTranslatef(x*tileLength, (nTilesHigh*tileLength) - (y*tileLength) - tileLength, 0);
+						glLineWidth(3);
+						glBegin(GL_LINE_LOOP);
+						glVertex2f(0, 0);
+						glVertex2f(0, tileLength);
+						glVertex2f(tileLength, tileLength);
+						glVertex2f(tileLength, 0);
+						glEnd();
+						glPopMatrix();
+
+						//Draw Circle Hitbox
+					}
 				}
 
 			}
 
 		}
+	}
 
+	void draw()
+	{
+		glLoadIdentity();
+		glPushMatrix();
+		//draw background
+		sky.draw();
+		vague.draw();
+		medium.draw();
+		detailed.draw();
+
+		
+
+		for (auto& extra : extraScenery)
+		{
+			extra.draw();
+		}
+		
 		//draw platforms
 		for (auto& platform : platforms)
 		{
 			platform->draw();
 		}
+		
 
 		//draw entities
-		for (auto& scroob : scroobs)
-		{
-			scroob->draw();
+		if (!debug) {
+			for (auto& scroob : scroobs)
+			{
+				scroob->draw();
+			}
 		}
 		//draw foreground
+
+		drawTiles();
+
+		ground.draw();
+		skyFeature.draw();
+
+		if (debug) {
+			glPushMatrix();
+			glColor3f(1, 1, 1);
+			glLineWidth(3);
+			glBegin(GL_LINE_LOOP);
+			glVertex2f(0, 0);
+			glVertex2f(0, actualheight);
+			glVertex2f(actualWidth, actualheight);
+			glVertex2f(actualWidth, 0);
+			glEnd();
+			glPopMatrix();
+
+			//draw entities
+			for (auto& scroob : scroobs)
+			{
+				scroob->draw();
+			}
+		}
 
 		glPopMatrix();
 
@@ -185,7 +468,7 @@ Level* currentLevel;
 void display()																	
 {
 	
-	int new_t = glutGet(GLUT_ELAPSED_TIME);
+	int new_t = gameTime = glutGet(GLUT_ELAPSED_TIME);
 	dt = (new_t - old_t);
 	if (dt < 0) {
 		dt = 0;
@@ -202,8 +485,7 @@ void display()
 	/*
 		Game Code Begin...
 	*/
-
-	currentLevel->draw();
+	if(!restarting) currentLevel->draw();
 	/*
 		Game Code End
 	*/
@@ -234,27 +516,42 @@ void loadAssets()
 {
 	scroob_normal = loadPNG("assets/scroobs/scroob_normal.png");
 	scroob_silly = loadPNG("assets/scroobs/scroob_silly.png");
+	scroob_enemy = loadPNG("assets/scroobs/enemy_normal.png");
+
+	grass_block = loadPNG("assets/level1/grass_blockt.png");
+	grass_platform = loadPNG("assets/level1/platform.png");
+	grass_floor = loadPNG("assets/level1/bg1e.png");
+
+	level1_sky = loadPNG("assets/level1/bg1a.png");
+	level1_clouds = loadPNG("assets/level1/bg1f.png");
+	level1_closehills = loadPNG("assets/level1/bg1c.png");
+	level1_farhills = loadPNG("assets/level1/bg1b.png");
+	level1_detailedhills = loadPNG("assets/level1/bg1d.png");
+	safe = loadPNG("assets/glass.png");
+
+	waterfall1 = loadPNG("assets/waterfalls/waterfall_a.png");
+	waterfall2 = loadPNG("assets/waterfalls/waterfall_b.png");
+	waterfall3 = loadPNG("assets/waterfalls/waterfall_c.png");
+	waterfall4 = loadPNG("assets/waterfalls/waterfall_d.png");
+	waterfall5 = loadPNG("assets/waterfalls/waterfall_e.png");
+	waterfall6 = loadPNG("assets/waterfalls/waterfall_f.png");
+	waterfall7 = loadPNG("assets/waterfalls/waterfall_g.png");
+	waterfall8 = loadPNG("assets/waterfalls/waterfall_h.png");
+	waterfall9 = loadPNG("assets/waterfalls/waterfall_i.png");
+	waterfall10 = loadPNG("assets/waterfalls/waterfall_j.png");
+	waterfall11 = loadPNG("assets/waterfalls/waterfall_k.png");
+	waterfall12 = loadPNG("assets/waterfalls/waterfall_l.png");
+	waterfall13 = loadPNG("assets/waterfalls/waterfall_m.png");
+	waterfall14 = loadPNG("assets/waterfalls/waterfall_n.png");
 }
 void init()
 {
-	glClearColor(0.0,0.0,0.0,1.0);
+	//glClearColor(0.0,0.0,0.0,1.0);
 	loadAssets();
-	player = new Player(15);
-	player->x = 100;
-	player->y = 100;
-	test = new NPC(20);
-	test->x = 200;
-	test->y = 50;
-	test1 = new NPC(40);
-	test1->x = 300;
 
-	testPlatform = new MovingPlatform(true,300,200,50,550);
-	platforms.push_back(testPlatform);
-	scroobs.push_back(player);
-	scroobs.push_back(test);
-	scroobs.push_back(test1);
 
 	currentLevel = new Level(1);
+	gameTime = glutGet(GLUT_ELAPSED_TIME);
 	camera = new Camera();
 
 	old_t = glutGet(GLUT_ELAPSED_TIME);
@@ -286,6 +583,25 @@ void processKeys()
 		if (keys['s']) {
 			player->fastFall();
 		}
+	}else
+	{
+		if (keys['r']) {
+			restarting = true;
+			int levelCode = currentLevel->levelCode;
+			delete currentLevel;
+			currentLevel = new Level(levelCode);
+		}
+		if (keys['1']) {
+			restarting = true;
+			delete currentLevel;
+			currentLevel = new Level(1);
+		}
+		if (keys['2']) {
+			restarting = true;
+			delete currentLevel;
+			currentLevel = new Level(2);
+		}
+
 	}
 }
 
@@ -305,14 +621,12 @@ void special(int key, int x, int y)
 			break;
 	}
 }
-
 void mouseMotion(int x, int y)
 {
 	mouse_y = y;
 	mouse_x = x;
 
 }
-
 void mouse(int button, int state, int x, int y)
 {
 	switch(button){
@@ -331,93 +645,47 @@ void mouse(int button, int state, int x, int y)
 			break;
 	}
 }
-
-//void CircleCircleCollisions()
-//{
-//	float xDist, yDist;
-//	for (int i = 0; i < scroobs.size(); i++) {
-//		Scroob* A = scroobs.at(i);
-//		for (int j = i + 1; j < scroobs.size(); j++) {
-//			Scroob* B = scroobs.at(j);
-//			float axmin = A->x - A->radius;
-//			float axmax = A->x + A->radius;
-//			float aymin = A->y - A->radius;
-//			float aymax = A->y + A->radius;
-//
-//			float bxmin = B->x - B->radius;
-//			float bxmax = B->x + B->radius;
-//			float bymin = B->y - B->radius;
-//			float bymax = B->y + B->radius;
-//
-//			if (axmin < bxmax && axmax > bxmin && aymin < bymax && aymax > bymin) {
-//				xDist = A->x - B->x;
-//				yDist = A->y - B->y;
-//				float distSquared = xDist * xDist + yDist * yDist;
-//				//Check the squared distances
-//				if (distSquared <= (A->radius + B->radius)*(A->radius + B->radius)) {
-//						A->x += (-A->vector.xPart * dt);
-//						//B->x += (-B->vector.xPart * dt);
-//						A->y += (-A->vector.yPart * dt);
-//						//B->y += (-B->vector.yPart * dt);
-//						float xVelocity = B->vector.xPart - A->vector.xPart;
-//						float yVelocity = B->vector.yPart - A->vector.yPart;
-//						float dotProduct = xDist * xVelocity + yDist * yVelocity;
-//						//check if the objects move towards one another.
-//						if (dotProduct > 0) {
-//							double collisionScale = dotProduct / distSquared;
-//							double xCollision = xDist * collisionScale;
-//							double yCollision = yDist * collisionScale;
-//
-//							A->vector.xPart += xCollision;
-//							A->vector.yPart += yCollision;
-//							B->vector.xPart -= xCollision;
-//							B->vector.yPart -= yCollision;
-//
-//							//A->mapCollisions(currentLevel->layout);
-//							//B->mapCollisions(currentLevel->layout);
-//						
-//					}
-//				}
-//			}
-//
-//		}
-//	}
-//}
-
-
 void update()
 {
 	/*
 		Update Code Start
 	*/
-	if (!paused) {
-
-		for (int i=0; i<scroobs.size(); i++)
+	processKeys();
+	if (!paused && !restarting) {
+		if(scroobs.size() < 2)
+		{
+			gameOver = true;
+		}
+		for (int i=0; i<scroobs.size(); i++) //REMOVE DEAD/SAFE SCROOBS
 		{
 			if(scroobs.at(i)->dead)
 			{
+				delete scroobs.at(i);
 				scroobs.erase(scroobs.begin() + i);
 			};
 		}
 
-		
-		for (auto& platform : platforms)
+		for (auto& extra : currentLevel->extraScenery)
+		{
+			extra.update();
+		}
+		for (auto& platform : platforms) //UPDATE PLATFORM POSITIONS
 		{
 			platform->update();
 		}
 
-		for (auto& scroob : scroobs)
+		for (auto& scroob : scroobs) //UPDATE AND PERFORM COLLISIONS FOR ALL SCROOBS
 		{
-			scroob->update(currentLevel->layout, scroobs,platforms);
+			scroob->update(currentLevel->layout, scroobs,platforms, player);
 		}
 
 		//CircleCircleCollisions();
 
-		camera->update(*player);
+		camera->update(*player); //AIM CAMERA AT PLAYER
 
 		
 	}
-	processKeys();
+	
 	/*
 		Update Code End
 	*/
@@ -436,7 +704,6 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	glutInitWindowSize(screenWidth, screenHeight);
    	glutInitWindowPosition(100,100);
-	
 	glutCreateWindow("Graphics 1 Coursework - 100126866");
 	
 	init();
