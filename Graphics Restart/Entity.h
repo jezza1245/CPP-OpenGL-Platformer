@@ -15,7 +15,7 @@ public:
 	
 	bool close(float otherX, float otherY, float distance)
 	{
-		return abs(x - otherX)<distance && abs(y - otherY)< distance;
+		return abs(x - otherX)<distance && abs(y - otherY)< distance/2;
 	}
 
 	int getXTileCoordinate(float x)

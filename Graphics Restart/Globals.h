@@ -40,6 +40,7 @@ bool cameraLock = true;
 bool paused = false;
 bool debug = false;
 int gameTime = 0;
+int maxScore = 0;
 int points = 0;
 bool gameOver = false;
 int dt = 0;

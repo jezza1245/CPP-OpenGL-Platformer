@@ -314,11 +314,23 @@ public:
 
 						if(!B->isFriendly)
 						{
-							radius -= 5;
+							if(y > B->y)
+							{
+								B->radius /= 2;
+							}
+							else {
+								radius -= 5;
+							}
 						}
 						if(!isFriendly)
 						{
-							B->radius -= 5;
+							if (B->vector.yPart > y)
+							{
+								radius /= 2;
+							}
+							else {
+								B->radius -= 5;
+							}
 						}
 
 						B->collisions(level,scroobs,platforms);

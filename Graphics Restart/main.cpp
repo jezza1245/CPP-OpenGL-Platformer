@@ -103,7 +103,7 @@ public:
 		else if (parallax == -1) { //auto moving
 			if (!paused) {
 				autoMove += 0.1 * dt; //move sideways
-				if (autoMove > 910) //reset
+				if (autoMove > 1400) //reset
 				{
 					autoMove = 0;
 				}
@@ -235,13 +235,13 @@ public:
 			layout += "...................................................................................#................";
 			layout += ".............##..........................#...............#..............................S..........."; //10(15)
 			layout += ".........................................#HHHHHHHHHHHHHHH#..........................###########.....";
-			layout += "......S...................................###############...........................................";
+			layout += "......S.............................................................................................";
 			layout += ".....###............................................................................................";
 			layout += "....................................................................................................";
 			layout += "...................................................................S......E....S...................."; //5(20)
 			layout += "........................###############..........#############....#####################.............";
-			layout += ".............................................................#HHHH#.................................";
-			layout += "..................P.........................E................######.................................";
+			layout += "..............................................................HHHH..................................";
+			layout += "..................P.........................E.......................................................";
 			layout += "................######HHHHHHHHHHHHHHHHHH######.....................................HHHHHHHHHHHHHHHHH"; //0 (25)
 
 			ground = SceneryPiece(0, -200, 5000, 1080, grass_floor, 0, 2, false);
@@ -249,9 +249,9 @@ public:
 			vague = SceneryPiece(-2000, 0, 10000, 120, level1_farhills, 1.2, 5, false);
 			medium = SceneryPiece(-2000, -50, 10000, 1000, level1_closehills, 1.1, 5, false);
 			detailed = SceneryPiece(0, -100, 5000, 900, level1_detailedhills, 0, 2, false);
-			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 5, false);
+			skyFeature = SceneryPiece(-2000, 0, 7000, 1250, level1_clouds, -1, 4, false);
 
-			extraScenery.push_back(SceneryPiece(350, 0, 200, 348, waterfall1, 0, 0, true));
+			extraScenery.push_back(SceneryPiece(220, 0, 210, 348, waterfall1, 0, 0, true));
 
 			platform1 = new MovingPlatform(true, 500, 200, 400, 800, true);
 			platform2 = new MovingPlatform(true, 2500, 800, 2300, 2800, true);
@@ -285,8 +285,8 @@ public:
 			layout += "....................................................................................................";
 			layout += "..........................#.........................................................................";
 			layout += "....................................................................................................";
-			layout += ".##...........................#....................................................................."; //5
-			layout += "........................#...........................................................................";
+			layout += ".##...........................#.......................................S............................."; //5
+			layout += "........................#....................######................######...........................";
 			layout += ".......#...........E....#............#..............................................................";
 			layout += ".......#.S.S.S.S.S......#...........................................................................";
 			layout += "P......#................#....###HHHHHHH#############.HHHHHHHHHHH..################..................";
@@ -296,12 +296,12 @@ public:
 			vague = SceneryPiece(-2000, 0, 10000, 120, level1_farhills, 1.2, 5, false);
 			medium = SceneryPiece(-2000, -50, 10000, 1000, level1_closehills, 1.1, 5, false);
 			detailed = SceneryPiece(0, -100, 5000, 900, level1_detailedhills, 0, 2, false);
-			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 5, false);
+			skyFeature = SceneryPiece(-2000, 0, 7000, 1250, level1_clouds, -1, 4, false);
 			
 			platform1 = new MovingPlatform(true, 500, 200, 400, 800, true);
-		
+			platform2 = new MovingPlatform(true, 3000, 190, 2550, 3350, true);
 			platforms.push_back(platform1);
-		
+			platforms.push_back(platform2);
 			
 			break;
 		default:
@@ -331,7 +331,7 @@ public:
 			layout += ".........#..........................................................................................";
 			layout += "....P....#..........................................................................................";
 			ground = SceneryPiece(0, -140, 1440, 810, homePage, 0, 0, false);
-			paused = true;
+			
 			break;
 		}
 		for(int i = 0; i<scroobs.size(); i++)
@@ -391,6 +391,11 @@ public:
 			}
 			scroobs.clear();
 			scroobs.push_back(findPlayer);
+
+			if(points > maxScore)
+			{
+				maxScore = points;
+			}
 		}
 	}
 
@@ -469,8 +474,57 @@ public:
 		{
 			ground.draw();
 			glPopMatrix();
+
+			std::string rules1 = "Knock the friendly Scroobs into the safe zone, the bigger the better!";
+			std::string rules2 = "Blue Scroobs are dangerous, beware!";
+			std::string rules3 = "Scroobs shrink over time so get them home quick!";
+			std::string rules4 = "The Game ends when you save them all or you/they die!";
+			writeText(400, 650, 1.0, 0.4, 0.0, rules1);
+			writeText(500, 630, 1.0, 0.4, 0.0, rules2);
+			writeText(470, 610, 1.0, 0.4, 0.0, rules3);
+			writeText(450, 590, 1.0, 0.4, 0.0, rules4);
+
+			std::string lastScore = "Score: ";
+			lastScore.append(std::to_string(points));
+			writeText(720, 360, 0.0, 0.4, 0.0, lastScore);
+			std::string highScore = "High Score: ";
+			highScore.append(std::to_string(maxScore));
+			writeText(720, 330, 0.0, 0.8, 0.0, highScore);
+
+
+			std::string info1 = "ESC - OVERLAY MENU ";
+			writeText(1000, 360, 1.0, 0.0, 0.0, info1);
+			std::string info2 = "While in Overlay Menu (at any time)...";
+			writeText(1000, 330, 0.0, 0.3, 0.8, info2);
+			std::string info3 = "1 - Level 1";
+			writeText(1000, 300, 0.0, 0.0, 0.8, info3);
+			std::string info4 = "2 - Level 2";
+			writeText(1000, 270, 0.0, 0.0, 0.8, info4);
+			std::string info5 = "0 - Main Menu";
+			writeText(1000, 240, 0.0, 0.0, 0.8, info5);
+			std::string info6 = "r - Restart";
+			writeText(1000, 210, 0.0, 0.0, 0.8, info6);
+
+
+			std::string info13 = "In-Game Options:";
+			writeText(300, 360, 0.0, 0.0, 0.8, info13);
+			std::string info7 = "W - Jump";
+			writeText(300, 330, 0.0, 0.0, 0.8, info7);
+			std::string info8 = "A- Left";
+			writeText(300, 300, 0.0, 0.0, 0.8, info8);
+			std::string info9 = "S - FastFall";
+			writeText(300, 270, 0.0, 0.0, 0.8, info9);
+			std::string info10 = "D - Right";
+			writeText(300, 240, 0.0, 0.0, 0.8, info10);
+
+			std::string info11 = "/ - Debug Mode";
+			writeText(300, 200, 0.0, 0.0, 0.8, info11);
+			std::string info12 = ". - Free Camera (Debug Only)";
+			writeText(300, 170, 0.0, 0.0, 0.8, info12);
+
+
 			return;
-		}
+		} 
 		//draw background
 		sky.draw();
 		vague.draw();
@@ -532,6 +586,35 @@ public:
 		scroobsLeft.append(std::to_string(numberOfScroobs));
 		writeText(camera->x + camera->width / 10, camera->y + camera->height - camera->height / 10 - 50, 0.0, 0.0, 0.0, scroobsLeft);
 
+		if(paused)
+		{
+			std::string info1 = "PAUSED";
+			writeText(camera->x + camera->width /2 - 20, camera->y + camera->height/1.5, 1.0, 0.8, 0.3, info1);
+			
+			std::string info3 = "1 - Level 1";
+			writeText(camera->x + camera->width / 2 - 20, camera->y + camera->height / 1.5 - 80, 1.0, 0.0, 0.8, info3);
+			std::string info4 = "2 - Level 2";
+			writeText(camera->x + camera->width / 2 - 20, camera->y + camera->height / 1.5 - 100, 1.0, 0.0, 0.8, info4);
+			std::string info5 = "0 - Main Menu";
+			writeText(camera->x + camera->width / 2 - 20, camera->y + camera->height / 1.5 - 120, 0.0, 0.0, 0.8, info5);
+			std::string info6 = "r - Restart";
+			writeText(camera->x + camera->width / 2 - 20, camera->y + camera->height / 1.5 - 140, 0.0, 0.0, 0.8, info6);
+		
+			
+			std::string info7 = "W - Jump";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height - 50, 0.0, 0.0, 0.8, info7);
+			std::string info8 = "A- Left";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height - 70, 0.0, 0.0, 0.8, info8);
+			std::string info9 = "S - FastFall";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height - 90, 0.0, 0.0, 0.8, info9);
+			std::string info10 = "D - Right";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height - 110, 0.0, 0.0, 0.8, info10);
+
+			std::string info11 = "/ - Debug Mode";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height  - 130, 0.0, 0.0, 0.8, info11);
+			std::string info12 = ". - Free Camera (Debug Only)";
+			writeText(camera->x + camera->width / 1.3, camera->y + camera->height  - 150, 0.0, 0.0, 0.8, info12);
+		}
 		glPopMatrix();
 
 	}
@@ -809,7 +892,9 @@ void update()
 		{
 			if(scroobs.at(i)->dead)
 			{
-				currentLevel->numberOfScroobs--;
+				if (scroobs.at(i)->isFriendly) {
+					currentLevel->numberOfScroobs--;
+				}
 				delete scroobs.at(i);
 				scroobs.erase(scroobs.begin() + i);
 			};

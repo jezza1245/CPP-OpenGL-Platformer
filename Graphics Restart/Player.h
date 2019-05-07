@@ -31,6 +31,8 @@ public:
 		applyFriction();
 		vector += (gravity * dt);
 
+		if (radius < 10) dead = true;
+
 		if (vector.yPart < -1.5) vector.yPart = -1.5;
 		if (vector.yPart > 1.5) vector.yPart = 1.5;
 

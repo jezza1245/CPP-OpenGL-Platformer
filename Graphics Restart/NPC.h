@@ -41,15 +41,18 @@ public:
 
 	void update(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms, Player* pl)
 	{
+
 		applyFriction();
 		vector.xPart *= 1.00000001;
 
-		if(radius * 0.9999 < 1)
-		{
-			radius = 5;
-		}
-		else {
-			radius *= 0.9999;
+		if (isFriendly) {
+			if (radius * 0.9999 < 10)
+			{
+				dead = true;
+			}
+			else {
+				radius *= 0.9999;
+			}
 		}
 
 		vector += gravity;
@@ -66,14 +69,15 @@ public:
 		if (!isFriendly && isOnGround)
 		{
 			timeSinceEvent++;
-			if (timeSinceEvent > 800)
+			if (timeSinceEvent > 500)
 			{
 				timeSinceEvent = 0;
 				
 				if (close(pl->x, pl->y,500)) {
-					if (pl->x < x) vector.xPart = -0.5;
-					else vector.xPart = 0.5;
-					vector.yPart = 0.5;
+					vector = MovementVector((pl->x - x)/400, (pl->y - y)/400);
+					/*if (pl->x < x) vector.xPart = -0.1 * dt * abs(pl->x - x)/200;
+					else vector.xPart = 0.1 * dt;
+					vector.yPart = 0.5;*/
 				}
 			}
 		}
