@@ -56,17 +56,13 @@ public:
 		
 		x += (vector.xPart * dt);
 		y += (vector.yPart * dt);
-
+		collisions(level, scroobs, platforms);
 		if(!dead && isFriendly && findTile(x,y,level) == 'H')
 		{
 			points += int(radius);
 			dead = true;
 			std::cout << "+" << radius << "   (" << points << ")" << std::endl;
 		}
-
-		
-		
-		collisions(level,scroobs,platforms);
 		if (!isFriendly && isOnGround)
 		{
 			timeSinceEvent++;

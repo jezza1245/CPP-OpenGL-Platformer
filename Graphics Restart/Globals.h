@@ -34,8 +34,9 @@ GLuint level1_detailedhills = 0;
 GLuint level1_clouds = 0;
 GLuint safe = 0;
 
+GLuint homePage = 0;
 
-
+bool cameraLock = true;
 bool paused = false;
 bool debug = false;
 int gameTime = 0;

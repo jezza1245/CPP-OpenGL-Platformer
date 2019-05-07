@@ -20,6 +20,10 @@ int gameSpeed = 1;
 int timePassed = 0;
 
 bool LeftPressed = false;
+bool LeftArrowPressed = false;
+bool UpArrowPressed = false;
+bool RightArrowPressed = false;
+bool DownArrowPressed = false;
 char keys[256];
 
 bool restarting = false;
@@ -133,6 +137,7 @@ public:
 MovingPlatform* platform1;
 MovingPlatform* platform2;
 MovingPlatform* platform3;
+MovingPlatform* platform4;
 std::vector<Scroob*> scroobs;
 std::vector<MovingPlatform*> platforms;
 
@@ -143,8 +148,10 @@ void reshape(int width, int height);				//called when the window is resized
 void loadAssets();
 void init();				//called in winmain when the program starts.
 void processKeys();
-void keyPressed();
-void keyReleased();
+void keyPressed(unsigned char c, int x, int y);
+void keyReleased(unsigned char c, int x, int y);
+void specialPressed(int key, int x, int y);
+void specialReleased(int key, int x, int y);
 //void CircleCircleCollisions();
 void special(int key, int x, int y);
 void update();				//called in winmain to update variables
@@ -188,49 +195,60 @@ public:
 	std::string layout;
 	SceneryPiece ground, sky, vague, medium, detailed, skyFeature;
 	std::vector<SceneryPiece> extraScenery;
+	int numberOfScroobs = 0;
 	Level(int levelNumber)
 	{
+		debug = false;
+		numberOfScroobs = 0;
 		levelCode = levelNumber;
 		switch (levelNumber)
 		{
 		case 1:
 			//build level 1
-			layout += "..........................................#........................................................."; //25
-			layout += "..........................................#.........................................................";
-			layout += "..................................................................###...####...####...####...#######";
-			layout += "..........................................#.........................................................";
-			layout += "..P.......................................#............#################............................";
-			layout += "#####......#######........#######.....#####........................................................."; //20
-			layout += "..........................................#.........................................................";
-			layout += "..######..................S...............#.........................................................";
-			layout += "..##...s.......S..........................#.........................................................";
-			layout += ".........###..............#....S..........#############.............................................";
-			layout += "...................................#...S..#........................................................."; //15
-			layout += "......##...#######....#...................#.........................................................";
-			layout += "...............................#..........#.........................................................";
-			layout += "....................#..................#..#.........................................................";
-			layout += "..........................................#.........................................................";
-			layout += "..####......###............#..............#........................................................."; //10
-			layout += "..........................................###########...............................................";
-			layout += "..................................#.......#.........................................................";
-			layout += "..........................................#.........................................................";
-			layout += "..........................................#.........................................................";
-			layout += "..................................E.......#........................................................."; //5
-			layout += "###########################################.........................................................";
-			layout += "..........................................#.........................................................";
-			layout += "#.....#.....#.....#....#....#....#....#...#.........................................................";
-			layout += "HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH#.........................................................";
+			//         |1  |5   |10  |15  |20  |25  |30  |35  |40  |45  |50  |55  |60  |65  |70  |75  |80  |85  |90  |95  |100  	
+			layout += "................................................................................####################"; //25(0)
+			layout += "....................................................................................................";
+			layout += ".....S..........................S...................................................................";
+			layout += "..#######..............########################.....####################........####................";
+			layout += "....................................................................................................";
+			layout += "...............####.................................................................###########....."; //20(5)
+			layout += "....................................................................................................";
+			layout += "....................................S.........................S....................#................";
+			layout += ".....##............................###.......................###...................#................";
+			layout += ".......................................E...................E.......................#................";
+			layout += "....................##................###.................###......................#........S......."; //15(10)
+			layout += "..........................................S.............S..........................#....############";
+			layout += "........##...............................###...........###.........................#................";
+			layout += "...................................................................................#................";
+			layout += "...................................................................................#................";
+			layout += ".............##..........................#...............#..............................S..........."; //10(15)
+			layout += ".........................................#HHHHHHHHHHHHHHH#..........................###########.....";
+			layout += "......S...................................###############...........................................";
+			layout += ".....###............................................................................................";
+			layout += "....................................................................................................";
+			layout += "...................................................................S......E....S...................."; //5(20)
+			layout += "........................###############..........#############....#####################.............";
+			layout += ".............................................................#HHHH#.................................";
+			layout += "..................P.........................E................######.................................";
+			layout += "................######HHHHHHHHHHHHHHHHHH######.....................................HHHHHHHHHHHHHHHHH"; //0 (25)
 
-			ground = SceneryPiece(-5000, -200, 20000, 1080, grass_floor, 0, 10, false);
-			sky = SceneryPiece(-5000, 0, 20000, 1250, level1_sky, 1.1, 10, false);
-			vague = SceneryPiece(-5000, 0, 20000, 120, level1_farhills, 1.07, 10, false);
-			medium = SceneryPiece(-5000, -50, 20000, 1000, level1_closehills, 1.05, 10, false);
-			detailed = SceneryPiece(-5000, -100, 20000, 900, level1_detailedhills, 0, 10, false);
-			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 10, false);
+			ground = SceneryPiece(0, -200, 5000, 1080, grass_floor, 0, 2, false);
+			sky = SceneryPiece(-5000, 0, 10000, 1250, level1_sky, 1.3, 5, false);
+			vague = SceneryPiece(-2000, 0, 10000, 120, level1_farhills, 1.2, 5, false);
+			medium = SceneryPiece(-2000, -50, 10000, 1000, level1_closehills, 1.1, 5, false);
+			detailed = SceneryPiece(0, -100, 5000, 900, level1_detailedhills, 0, 2, false);
+			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 5, false);
 
 			extraScenery.push_back(SceneryPiece(350, 0, 200, 348, waterfall1, 0, 0, true));
 
-			
+			platform1 = new MovingPlatform(true, 500, 200, 400, 800, true);
+			platform2 = new MovingPlatform(true, 2500, 800, 2300, 2800, true);
+			platform3 = new MovingPlatform(true, 4650, 250, 4500, 4900, true);
+			platform4 = new MovingPlatform(true, 3900, 250, 3800, 4100, true);
+			platforms.push_back(platform1);
+			platforms.push_back(platform2);
+			platforms.push_back(platform3);
+			platforms.push_back(platform4);
 
 			break;
 		case 2:
@@ -258,15 +276,15 @@ public:
 			layout += ".##...........................#....................................................................."; //5
 			layout += "........................#...........................................................................";
 			layout += ".......#...........E....#............#..............................................................";
-			layout += ".P.....#.S.S.S.S.S......#...........................................................................";
-			layout += ".......#................#....###HHHHHHH#############.HHHHHHHHHHH..################..................";
+			layout += ".......#.S.S.S.S.S......#...........................................................................";
+			layout += "P......#................#....###HHHHHHH#############.HHHHHHHHHHH..################..................";
 
-			ground = SceneryPiece(-5000, -200, 20000, 1080, grass_floor, 0, 10, false);
-			sky = SceneryPiece(-5000, 0, 20000, 1250, level1_sky, 1.1, 10, false);
-			vague = SceneryPiece(-5000, 0, 20000, 120, level1_farhills, 1.07, 10, false);
-			medium = SceneryPiece(-5000, -50, 20000, 1000, level1_closehills, 1.05, 10, false);
-			detailed = SceneryPiece(-5000, -100, 20000, 900, level1_detailedhills, 0, 10, false);
-			skyFeature = SceneryPiece(0, 0, 10000, 1250, level1_clouds, -1, 10, false);
+			ground = SceneryPiece(0, -200, 5000, 1080, grass_floor, 0, 2, false);
+			sky = SceneryPiece(-5000, 0, 10000, 1250, level1_sky, 1.3, 5, false);
+			vague = SceneryPiece(-2000, 0, 10000, 120, level1_farhills, 1.2, 5, false);
+			medium = SceneryPiece(-2000, -50, 10000, 1000, level1_closehills, 1.1, 5, false);
+			detailed = SceneryPiece(0, -100, 5000, 900, level1_detailedhills, 0, 2, false);
+			skyFeature = SceneryPiece(-5000, 0, 10000, 1250, level1_clouds, -1, 5, false);
 			
 			platform1 = new MovingPlatform(true, 500, 200, 400, 800, true);
 		
@@ -275,7 +293,33 @@ public:
 			
 			break;
 		default:
-			//build level 1?
+			layout += "...................................................................................................."; //25
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "...................................................................................................."; //20
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "...................................................................................................."; //15
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "...................................................................................................."; //10
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "....................................................................................................";
+			layout += "...................................................................................................."; //5
+			layout += "....................................................................................................";
+			layout += "#########...........................................................................................";
+			layout += ".........#..........................................................................................";
+			layout += "....P....#..........................................................................................";
+			ground = SceneryPiece(0, -140, 1440, 810, homePage, 0, 0, false);
+			paused = true;
 			break;
 		}
 		for(int i = 0; i<scroobs.size(); i++)
@@ -289,18 +333,21 @@ public:
 		{
 			if(layout[i] == 'S')
 			{
-				NPC* newScroob = new NPC(true,40, (i % nTilesHigh)*tileLength, (nTilesHigh - (i / nTilesWide))*tileLength);
+				NPC* newScroob = new NPC(true,40, i % nTilesWide*tileLength + 25, (nTilesHigh - 1 - i / nTilesWide)*tileLength);
 				scroobs.push_back(newScroob);
+				numberOfScroobs++;
 			}
 			else if (layout[i] == 'E')
 			{ 
-				NPC* newScroob = new NPC(false, 50, i % nTilesHigh*tileLength, (nTilesHigh - (i / nTilesWide))*tileLength);
+				NPC* newScroob = new NPC(false, 50, i % nTilesWide*tileLength + 25, (nTilesHigh - 1 - i / nTilesWide)*tileLength);
 				scroobs.push_back(newScroob);
 			}
 			else if(layout[i] == 'P')
 			{
-				player->x = i % nTilesHigh*tileLength;
-				player->y = (nTilesHigh - i / nTilesWide)*tileLength;
+				player->x = i % nTilesWide*tileLength + 25;
+				player->y = (nTilesHigh - 1 - i / nTilesWide)*tileLength;
+				//std::cout << i % nTilesHigh*tileLength+25 << "," << (nTilesHigh-1-i/nTilesWide)*tileLength << std::endl;
+
 			}
 		}
 		scroobs.push_back(player);
@@ -403,8 +450,15 @@ public:
 
 	void draw()
 	{
+		
 		glLoadIdentity();
 		glPushMatrix();
+		if(levelCode == 0)
+		{
+			ground.draw();
+			glPopMatrix();
+			return;
+		}
 		//draw background
 		sky.draw();
 		vague.draw();
@@ -480,7 +534,7 @@ void display()
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	glLoadIdentity();
-
+	
 	
 	/*
 		Game Code Begin...
@@ -514,6 +568,8 @@ void reshape(int width, int height)		// Resize the OpenGL window
 }
 void loadAssets()
 {
+	homePage = loadPNG("assets/titlescreen.png");
+
 	scroob_normal = loadPNG("assets/scroobs/scroob_normal.png");
 	scroob_silly = loadPNG("assets/scroobs/scroob_silly.png");
 	scroob_enemy = loadPNG("assets/scroobs/enemy_normal.png");
@@ -550,7 +606,7 @@ void init()
 	loadAssets();
 
 
-	currentLevel = new Level(1);
+	currentLevel = new Level(0);
 	gameTime = glutGet(GLUT_ELAPSED_TIME);
 	camera = new Camera();
 
@@ -563,11 +619,14 @@ void keyPressed(unsigned char c, int x, int y) {
 
 	if(c == 27) paused = !paused;
 	if (c == '/') debug = !debug;
+	if (debug && c == '.') {
+		cameraLock = !cameraLock;
+		std::cout << "CAMERA LOCK: " << cameraLock << std::endl;
+	}
 }
 void keyReleased(unsigned char c, int x, int y) {
 	keys[c] = false; 
 }
-
 void processKeys() 
 {
 	if (!paused) {
@@ -583,13 +642,19 @@ void processKeys()
 		if (keys['s']) {
 			player->fastFall();
 		}
-	}else
+	}
+	else
 	{
 		if (keys['r']) {
 			restarting = true;
 			int levelCode = currentLevel->levelCode;
 			delete currentLevel;
 			currentLevel = new Level(levelCode);
+		}
+		if (keys['0']) {
+			restarting = true;
+			delete currentLevel;
+			currentLevel = new Level(0);
 		}
 		if (keys['1']) {
 			restarting = true;
@@ -603,22 +668,69 @@ void processKeys()
 		}
 
 	}
+	if (LeftArrowPressed) camera->moveLeft();
+	if (RightArrowPressed) camera->moveRight();
+	if (UpArrowPressed) camera->moveUp();
+	if (DownArrowPressed) camera->moveDown();
 }
+
+void specialPressed(int key, int x, int y)
+{
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		LeftArrowPressed = true;
+		break;
+	case GLUT_KEY_RIGHT:
+		RightArrowPressed = true;
+		break;
+	case GLUT_KEY_DOWN:
+		DownArrowPressed = true;
+		break;
+	case GLUT_KEY_UP:
+		UpArrowPressed = true;
+		break;
+	}
+
+}
+
+void specialReleased(int key, int x, int y)
+{
+	switch (key) {
+	case GLUT_KEY_LEFT:
+		LeftArrowPressed = false;
+		break;
+	case GLUT_KEY_RIGHT:
+		RightArrowPressed = false;
+		break;
+	case GLUT_KEY_DOWN:
+		DownArrowPressed = false;
+		break;
+	case GLUT_KEY_UP:
+		UpArrowPressed = false;
+		break;
+	}
+}
+
 
 void special(int key, int x, int y)
 {
-	switch(key)
-	{
-		case GLUT_KEY_LEFT:
-			
-			break;
-		case GLUT_KEY_RIGHT:
-			
-			break;
-		case GLUT_KEY_UP:
-			break;
-		case GLUT_KEY_DOWN:
-			break;
+	if (!cameraLock) {
+		if(key == GLUT_KEY_LEFT)
+		{
+			camera->moveLeft();
+		}
+		if (key == GLUT_KEY_RIGHT)
+		{
+			camera->moveRight();
+		}
+		if (key == GLUT_KEY_UP)
+		{
+			camera->moveUp();
+		}
+		if (key == GLUT_KEY_DOWN)
+		{
+			camera->moveDown();
+		}
 	}
 }
 void mouseMotion(int x, int y)
@@ -650,7 +762,23 @@ void update()
 	/*
 		Update Code Start
 	*/
+	if(!debug)
+	{
+		cameraLock = true;
+	}
 	processKeys();
+	if((player->dead || currentLevel->numberOfScroobs == 0 )&& currentLevel->levelCode != 0)
+	{
+		restarting = true;
+		delete currentLevel;
+		currentLevel = new Level(0);
+		return;
+	}
+	if (currentLevel->levelCode == 0)
+	{
+		camera->x = 0;
+		camera->y = 0;
+	};
 	if (!paused && !restarting) {
 		if(scroobs.size() < 2)
 		{
@@ -660,6 +788,7 @@ void update()
 		{
 			if(scroobs.at(i)->dead)
 			{
+				currentLevel->numberOfScroobs--;
 				delete scroobs.at(i);
 				scroobs.erase(scroobs.begin() + i);
 			};
@@ -718,7 +847,8 @@ int main(int argc, char **argv)
 	glutKeyboardFunc(keyPressed);
 	glutKeyboardUpFunc(keyReleased);
 	//add callback for the function keys.
-	glutSpecialFunc(special);
+	glutSpecialFunc(specialPressed);
+	glutSpecialUpFunc(specialReleased);
 	
 	glutMainLoop();
 	
