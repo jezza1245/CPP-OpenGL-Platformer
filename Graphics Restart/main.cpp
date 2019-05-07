@@ -152,6 +152,7 @@ void keyPressed(unsigned char c, int x, int y);
 void keyReleased(unsigned char c, int x, int y);
 void specialPressed(int key, int x, int y);
 void specialReleased(int key, int x, int y);
+void writeText(int x, int y, float red, float green, float blue, int font, char* text);
 //void CircleCircleCollisions();
 void special(int key, int x, int y);
 void update();				//called in winmain to update variables
@@ -186,6 +187,16 @@ GLuint loadPNG(char* name)
 
 	return myTextureID;
 }
+void writeText(int x, int y, float red, float green, float blue, std::string text)
+{
+	glColor3f(red,green,blue);
+	glRasterPos2f(x, y);
+	for(int i=0; i< text.length(); i++)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+	}
+	glColor3f(1, 1, 1);
+}
 
 class Level
 {
@@ -201,6 +212,7 @@ public:
 		debug = false;
 		numberOfScroobs = 0;
 		levelCode = levelNumber;
+		if (levelNumber != 0) points = 0;
 		switch (levelNumber)
 		{
 		case 1:
@@ -512,6 +524,14 @@ public:
 			}
 		}
 
+		std::string pointsAsString = "SCORE: ";
+		pointsAsString.append(std::to_string(points));
+		writeText(camera->x + camera->width / 10, camera->y + camera->height - camera->height / 10, 0.0, 0.0, 0.0, pointsAsString);
+		
+		std::string scroobsLeft = "Remaining: ";
+		scroobsLeft.append(std::to_string(numberOfScroobs));
+		writeText(camera->x + camera->width / 10, camera->y + camera->height - camera->height / 10 - 50, 0.0, 0.0, 0.0, scroobsLeft);
+
 		glPopMatrix();
 
 	}
@@ -540,6 +560,7 @@ void display()
 		Game Code Begin...
 	*/
 	if(!restarting) currentLevel->draw();
+	
 	/*
 		Game Code End
 	*/
