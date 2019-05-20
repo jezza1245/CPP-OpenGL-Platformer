@@ -7,7 +7,7 @@ class Entity
 {
 public:
 	GLuint texture = 0;
-	MovementVector vector = MovementVector(0,0.0);
+	MovementVector vector = MovementVector(0.0,0.0);
 	float x = 0, y = 0;
 	bool isOnGround = false;
 
@@ -26,6 +26,8 @@ public:
 	{
 		return y / 50; //50 is H and W
 	}
+
+	//Find the tile that a vertex is in
 	char findTile(float x, float y, std::string layout)
 	{
 		int tilesInX = 100, tilesInY = 25;
@@ -40,10 +42,19 @@ public:
 		return NULL;
 
 	}
+
+	/*
+		Axis Aligned Bounding Box collision
+		Takes the width and height of the object being called on, with the dimensions of another
+
+		returns true if landed on top of ground/platform/tile
+	*/
 	bool AABBCollision(float width, float height,
 		float bxmin, float bxmax, float bymin, float bymax)
 	{
-		width /= 2; height /= 2;
+		width /= 2; height /= 2; //Make bounding box smaller than full entity
+
+		//If the shapes intersect
 		if (x-width < bxmax && x+width > bxmin && y-height < bymax && y+height > bymin) {
 			if (vector.xPart > 0) //Travelling right
 			{

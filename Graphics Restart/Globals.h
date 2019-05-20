@@ -37,7 +37,7 @@ GLuint safe = 0;
 GLuint homePage = 0;
 
 bool cameraLock = true;
-bool paused = false;
+bool paused = true;
 bool debug = false;
 int gameTime = 0;
 int maxScore = 0;

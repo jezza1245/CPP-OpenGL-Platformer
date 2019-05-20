@@ -45,13 +45,15 @@ public:
 		applyFriction();
 		vector.xPart *= 1.00000001;
 
+
+		//Check radius
 		if (isFriendly) {
-			if (radius * 0.9999 < 10)
+			if (radius * 0.99995 < 10)
 			{
 				dead = true;
 			}
-			else {
-				radius *= 0.9999;
+			else { //Shrink
+				radius *= 0.99995;
 			}
 		}
 
@@ -60,12 +62,16 @@ public:
 		x += (vector.xPart * dt);
 		y += (vector.yPart * dt);
 		collisions(level, scroobs, platforms);
+
+		//If safe
 		if(!dead && isFriendly && findTile(x,y,level) == 'H')
 		{
 			points += int(radius);
 			dead = true;
 			std::cout << "+" << radius << "   (" << points << ")" << std::endl;
 		}
+
+		//Enemy movement
 		if (!isFriendly && isOnGround)
 		{
 			timeSinceEvent++;
@@ -74,10 +80,7 @@ public:
 				timeSinceEvent = 0;
 				
 				if (close(pl->x, pl->y,500)) {
-					vector = MovementVector((pl->x - x)/400, (pl->y - y)/400);
-					/*if (pl->x < x) vector.xPart = -0.1 * dt * abs(pl->x - x)/200;
-					else vector.xPart = 0.1 * dt;
-					vector.yPart = 0.5;*/
+					vector = MovementVector((pl->x - x)/200, (pl->y - y)/200);
 				}
 			}
 		}

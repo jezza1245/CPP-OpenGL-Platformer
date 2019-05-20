@@ -19,9 +19,9 @@ public:
 	void draw() override
 	{
 		glLoadIdentity();
-		glPushMatrix(); // ENTITY
+		glPushMatrix(); // Push for translation
 			glTranslatef(x, y, 0);
-			glPushMatrix(); //PUSH CHARACTER ROTATION
+			glPushMatrix(); //Push for rotation
 			if (!paused) {
 				rollAngle += (-vector.xPart * 2 * dt);
 			}
@@ -32,7 +32,6 @@ public:
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 				//DRAWS A CIRCLE CENTERED AT x,y WITH RADIUS radius
 				float x1 = 0, y1 = 0, angle, radian;
-				//glColor3f(1, 1, 1);
 				glBegin(GL_POLYGON);
 				for (angle = 1.0; angle < 361.0; angle += 20)
 				{
@@ -48,18 +47,17 @@ public:
 					glTexCoord2f(tx, ty); //fine
 					glVertex2f(x1, y1);
 				}
-
-			
 				glEnd();
 
 				glDisable(GL_BLEND);
 				glDisable(GL_TEXTURE_2D);
 			glPopMatrix(); //POP CHARACTER ROTATION
+
+			//Debug mode, draw bounding boxes used in collisions
 			if (debug)
 			{
 
-				//Draw square
-				glPushMatrix();
+				//Draw square hitbox
 				glColor3f(1,1,1);
 				glLineWidth(3);
 				glBegin(GL_LINE_LOOP);
@@ -68,9 +66,8 @@ public:
 ;					glVertex2f(radius/2, radius/2);
 					glVertex2f(radius/2, -radius/2);
 				glEnd();
-				glPopMatrix();
 
-				glPushMatrix();
+				//Draw Circle hitbox
 				glColor3f(1.0, 0.5, 0);
 				glBegin(GL_LINE_LOOP);
 				
@@ -87,15 +84,15 @@ public:
 				}
 				glEnd();
 				glColor3f(1, 1, 1);
-				glPopMatrix();
 
 			}
-		glPopMatrix(); //ENTITY
+		glPopMatrix(); //Pop character translation
 
 	}
 	
 	virtual void applyFriction() = 0;
-	void leadingPointCollision()
+
+	void leadingPointCollision() //Was not used/ implemented fully
 	{
 		//get angle ball is heading from north, clockwise
 		//int angularDirection = atan2(vector.xPart, vector.yPart) * 180 / 3.14156; //Direction player is heading
@@ -107,6 +104,8 @@ public:
 		//float xpos = xTrans + (25 * sin(newang)); //find x coord
 		//float ypos = yTrans + (25 * cos(newang)); //find y coord
 	}
+
+	//Performs collisions on all other entities
 	void collisions(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms)
 	{
 		bool collidedWithGround = false;
@@ -120,7 +119,9 @@ public:
 			dead = true;
 		}
 	}
-	bool resolveTileCollisions(std::string tileMap) //return true if bottom collision
+
+	//Detect and resolve tile collisions
+	bool resolveTileCollisions(std::string tileMap) 
 	{
 		bool tl = findTile(x-radius,y+radius,tileMap)=='#';
 		bool tr = findTile(x+radius, y + radius, tileMap) == '#';
@@ -218,12 +219,13 @@ public:
 
 		return false;
 	}
+
+	//Detect and resolve platform collisions
 	void resolvePlatformCollisions(std::vector<MovingPlatform*> platforms)
 	{
 		for(auto& platform : platforms)
 		{
 			if (close(platform->x, platform->y, 500)) {
-
 				if (AABBCollision(radius, radius, platform->x - platform->width / 2, platform->x + platform->width / 2,
 					platform->y - platform->height / 2, platform->y + platform->height / 2)) {
 					x += platform->vector.xPart * dt;
@@ -239,6 +241,8 @@ public:
 			}
 		}
 	}
+
+	//Detect and resolve map boundry collisions
 	void resolveMapCollisions(bool onGround)
 	{
 		if(x-radius<0) //LEFT WALL
@@ -271,13 +275,17 @@ public:
 			isOnGround = false;
 		}
 	}
+
+	//Detect and resolve collisions with all other scroobs, may be called recursively on every scroob hit
 	bool CircleCircleCollisions(std::string level,std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms)
 	{
 		float xDist, yDist;	
 		for (int j = 0; j < scroobs.size(); j++) {
-			if (this == scroobs.at(j)) continue;
+			if (this == scroobs.at(j)) continue; //This == scroob being testes
 			Scroob* B = scroobs.at(j);
-			if (!close(B->x,B->y,200)) continue;
+			if (!close(B->x,B->y,200)) continue; //Too far away to collide even with AABB
+
+			//Get Bounding box dimensions and test for intersection
 			float axmin = x - radius;
 			float axmax = x + radius;
 			float aymin = y - radius;
@@ -288,52 +296,65 @@ public:
 			float bymin = B->y - B->radius;
 			float bymax = B->y + B->radius;
 
+			//If bounding boxes intersect
 			if (axmin < bxmax && axmax > bxmin && aymin < bymax && aymax > bymin) {
-				xDist = x - B->x;
-				yDist = y - B->y;
-				float distSquared = xDist * xDist + yDist * yDist;
-				//Check the squared distances
+
+				xDist = x - B->x; //Difference in x distance between centers
+				yDist = y - B->y; //Difference in y distance between centers
+
+				float distSquared = pow(xDist,2)+ pow(yDist,2); //get distance squared
+				
+				//Check the squared distances to see if the circles collide
 				if (distSquared <= (radius + B->radius)*(radius + B->radius)) {
+
+					//Move this object back to before collision
 					x += (-vector.xPart * dt);
-					//B->x += (-B->vector.xPart * dt);
 					y += (-vector.yPart * dt);
-					//B->y += (-B->vector.yPart * dt);
-					float xVelocity = B->vector.xPart - vector.xPart;
-					float yVelocity = B->vector.yPart - vector.yPart;
-					float dotProduct = xDist * xVelocity + yDist * yVelocity;
-					//check if the objects move towards one another.
+					
+					float xVelocity = B->vector.xPart - vector.xPart; //Difference in x velocities
+					float yVelocity = B->vector.yPart - vector.yPart; //Difference in y velocities
+
+					//find the dot product
+					float dotProduct = (xDist * xVelocity) + (yDist * yVelocity);
+
+					//check if the objects move towards one another. (0 if perpendicular, <0 if moving away)
 					if (dotProduct > 0) {
+
+						//Calculate how much to increment/decrement each vector by
 						double collisionScale = dotProduct / distSquared;
 						double xCollision = xDist * collisionScale;
 						double yCollision = yDist * collisionScale;
 
+						//Change both scroobs vectors
 						vector.xPart += xCollision;
 						vector.yPart += yCollision;
 						B->vector.xPart -= xCollision;
 						B->vector.yPart -= yCollision;
 
-						if(!B->isFriendly)
+
+						//Perform damage taking
+						if(!B->isFriendly) //If other scroobs isDeadly
 						{
-							if(y > B->y)
+							if(y > B->y) //If I landed on a deadly scroob
 							{
-								B->radius /= 2;
+								B->radius /= 2; //Halve its health/radius
 							}
-							else {
+							else { //Otherwise I take damage
 								radius -= 5;
 							}
 						}
-						if(!isFriendly)
+						if(!isFriendly) //If I am deadly
 						{
-							if (B->vector.yPart > y)
+							if (B->vector.yPart > y) //If other sscroob landed on me
 							{
-								radius /= 2;
+								radius /= 2; //I halve my health, radius
 							}
 							else {
-								B->radius -= 5;
+								B->radius -= 5; //othersise other scroob takes damage
 							}
 						}
 
-						B->collisions(level,scroobs,platforms);
+						B->collisions(level,scroobs,platforms); //Call recursively on other scroob
 						return true;
 					}
 				}

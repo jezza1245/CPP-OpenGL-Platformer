@@ -14,6 +14,7 @@ public:
 	}
 	void updateTexture() override
 	{
+		//If im moving close to terminal velocity, change texture
 		if(std::abs(vector.xPart) < 0.9)
 		{
 			texture = scroob_normal;
@@ -24,24 +25,29 @@ public:
 	}
 	void applyFriction() override
 	{
+		//Horizontal slow
 		vector.xPart *= 0.97;
 	}
 	void update(std::string level, std::vector<Scroob*> scroobs, std::vector<MovingPlatform*> platforms, Player* pl) override
 	{
-		applyFriction();
-		vector += (gravity * dt);
+		applyFriction(); //Horizontal friction
+		vector += (gravity * dt); //Apply gravity
 
-		if (radius < 10) dead = true;
+		if (radius < 10) dead = true; 
 
+		//restrict y velocity
 		if (vector.yPart < -1.5) vector.yPart = -1.5;
 		if (vector.yPart > 1.5) vector.yPart = 1.5;
 
+		//update x pos and y pos
 		x += (vector.xPart * dt);
 		y += (vector.yPart* dt);
-		collisions(level,scroobs,platforms);
+		collisions(level,scroobs,platforms); //Check and resolve collisions
 
 		updateTexture();
 	}
+
+	//Player movement functions
 	void jump()
 	{
 		if(isOnGround) vector.yPart = 1.5;
